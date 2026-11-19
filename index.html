@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <title>Симулятор азарта</title>
+    <style>
+        body {
+            background-color: #222;
+            color: white;
+            font-family: Arial;
+            text-align: center;
+            margin-top: 50px;
+        }
+        .main_box {
+            background-color: #333;
+            width: 400px;
+            margin: 0 auto;
+            padding: 20px;
+            border-radius: 8px;
+        }
+        .balans { font-size: 22px; color: #00ff00; margin-bottom: 10px; }
+        .stat { font-size: 14px; color: #ccc; margin-bottom: 20px; }
+        .circle {
+            width: 70px; height: 70px; border-radius: 50%;
+            margin: 15px auto; line-height: 70px;
+            font-size: 36px; font-weight: bold;
+            border: 2px solid white; background-color: #444;
+        }
+        .red { background-color: #d32f2f; }
+        .black { background-color: #000; }
+        .green { background-color: #388e3c; }
+        input {
+            padding: 8px; font-size: 16px; width: 100px;
+            text-align: center; margin-bottom: 10px;
+        }
+        button {
+            padding: 10px 15px; font-size: 16px; cursor: pointer;
+            border-radius: 4px; border: none; font-weight: bold; margin: 5px;
+        }
+        .btn-red { background-color: #d32f2f; color: white; }
+        .btn-black { background-color: #000; color: white; border: 1px solid white; }
+        .btn-auto { background-color: orange; color: black; width: 100%; margin-top: 15px; }
+        .msg { height: 20px; color: yellow; margin-top: 15px; font-weight: bold; }
+    </style>
+</head>
+<body>
+
+    <div class="main_box">
+        <h2>Симулятор рулетки</h2>
+        
+        <div class="balans">Баланс: <span id="balance">1000000</span> фишек</div>
+        <div class="stat">
+            Оборот: <span id="turnover">0</span> фишек<br>
+            Теоретический проигрыш (2.7%): <span id="expected">0</span> фишек
+        </div>
+
+        <div id="result" class="circle">?</div>
+        <div id="message" class="msg">Выберите ставку</div>
+
+        <div>
+            <label>Ставка: </label>
+            <input type="number" id="bet" value="10000" min="1000" step="1000">
+            <br><br>
+            <button class="btn-red" id="btnRed" onclick="game('red')">КРАСНОЕ</button>
+            <button class="btn-black" id="btnBlack" onclick="game('black')">ЧЁРНОЕ</button>
+            <br><br>
+            <label>Кол-во: </label>
+            <input type="number" id="autospins" value="100" min="1" max="100000">
+            <button class="btn-auto" id="btnAuto" onclick="auto_game()">АВТОИГРА</button>
+        </div>
+    </div>
+
+    <script>
+        var cash = 1000000; 
+        var lose_streak = 0;
+        var turn = 0;
+        var reds = [1, 3, 5, 7, 9, 12, 14, 16, 18, 19, 21, 23, 25, 27, 30, 32, 34, 36];
+        var t;
+
+        function update() {
+            document.getElementById("balance").innerHTML = cash;
+            document.getElementById("turnover").innerHTML = turn;
+            document.getElementById("expected").innerHTML = Math.round(turn * 0.027);
+        }
+
+        function game(color, auto) {
+            var bet = Number(document.getElementById("bet").value);
+            var m = document.getElementById("message");
+
+            if (bet > cash) {
+                if (!auto) { 
+                    alert("Недостаточно средств!");
+                }
+                return false;
+            }
+
+            cash = cash - bet;
+            turn = turn + bet;
+
+            var r = Math.floor(Math.random() * 37);
+            var col = "green";
+            
+            if (r != 0) {
+                if (reds.indexOf(r) != -1) {
+                    col = "red";
+                } else {
+                    col = "black";
+                }
+            }
+
+            if (auto != true) {
+                var disp = document.getElementById("result");
+                disp.innerHTML = r;
+                disp.className = "circle " + col;
+            }
+
+                        if (color == col) {
+                cash = cash + (bet * 2);
+                lose_streak = 0; // Если выиграл — счетчик проигрышей сбрасывается
+                
+                if (auto != true) {
+                    m.innerHTML = "ВЫ ВЫИГРАЛИ!";
+                    m.style.color = "lime";
+                }
+            } else {
+                lose_streak = lose_streak + 1; // Если проиграл — прибавляем 1
+                
+                if (auto != true) {
+                    m.innerHTML = "ВЫ ПРОИГРАЛИ";
+                    m.style.color = "red";
+                    
+                    // Проверяем, не проиграл ли игрок 5 раз подряд
+                    if (lose_streak == 5) {
+                        setTimeout(function() {
+                            m.innerHTML = "Вы проиграли 5 раз подряд. Это психологическая ловушка 'Погоня за проигрышем'. Казино затягивает вас!";
+                            m.style.color = "purple"; // Фиолетовый цвет для психологических подсказок
+                        }, 1000); // Сообщение появится через 1 секунду после проигрыша
+                        
+                        lose_streak = 0; // Сбрасываем счетчик, чтобы не спамить
+                    }
+                }
+            }
+
+            update();
+            return true;
+        }
+
+        function auto_game() {
+            var bet = Number(document.getElementById("bet").value);
+            var n = Number(document.getElementById("autospins").value);
+            var m = document.getElementById("message");
+
+            if (bet > cash) {
+                m.innerHTML = "Ошибка: мало денег";
+                m.style.color = "red";
+                return;
+            }
+
+            document.getElementById("btnRed").disabled = true;
+            document.getElementById("btnBlack").disabled = true;
+            document.getElementById("btnAuto").disabled = true;
+            m.style.color = "orange";
+
+            if (n <= 100) {
+                m.innerHTML = "Идет автоигра...";
+                var i = 0;
+                
+                t = setInterval(function() {
+                    if (bet > cash) {
+                        clearInterval(t);
+                        m.innerHTML = "Игра окончена. Банкрот.";
+                        m.style.color = "red";
+                        document.getElementById("btnRed").disabled = false;
+                        document.getElementById("btnBlack").disabled = false;
+                        document.getElementById("btnAuto").disabled = false;
+                        return;
+                    }
+
+                    game('red', true);
+                    i++;
+
+                    if (i >= n) {
+                        clearInterval(t);
+                        m.innerHTML = "Автоигра завершена!";
+                        m.style.color = "yellow";
+                        document.getElementById("btnRed").disabled = false;
+                        document.getElementById("btnBlack").disabled = false;
+                        document.getElementById("btnAuto").disabled = false;
+                    }
+                }, 30);
+            } else {
+                m.innerHTML = "Расчет, подождите...";
+                document.getElementById("result").innerHTML = "X";
+                
+                setTimeout(function() {
+                    var k = 0;
+                    for (var j = 0; j < n; j++) {
+                        if (cash < bet) { 
+                            break; 
+                        }
+                        game('red', true);
+                        k++;
+                    }
+
+                    document.getElementById("btnRed").disabled = false;
+                    document.getElementById("btnBlack").disabled = false;
+                    document.getElementById("btnAuto").disabled = false;
+
+                    if (k < n) {
+                        m.innerHTML = "Банкрот! Сделано: " + k;
+                        m.style.color = "red";
+                    } else {
+                        m.innerHTML = "Расчет " + n + " ставок готов!";
+                        m.style.color = "yellow";
+                    }
+                }, 50);
+            }
+        }
+
+        update(); 
+    </script>
+</body>
+</html>
